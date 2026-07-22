@@ -2,17 +2,10 @@ from pydantic import BaseModel, FilePath
 from pathlib import Path
 import sys
 
-class Config(BaseModel):
-    nb_drones: int
-    start_hub: str
-    end_hub: str
-    hubs: list[str]
-    connections: list[tuple[str, str]]
 
 class Parser(BaseModel):
     path: FilePath
-    config_as_text: str
-    config: Config
+    config_as_text: str = ""
     config_table: list[str] = []
 
     def extract(self) -> None:
@@ -26,6 +19,15 @@ class Parser(BaseModel):
         for line in self.config_table[:]:
             if not line.startswith(tuple(prefixes)):
                 self.config_table.remove(line)
+
+    def do_your_job(self) -> None:
+        try:
+            self.extract()
+            if not self.inspect():
+                sys.exit(1)
+        except Exception as e:
+            print(f"WATCH OUT!!\nthere was an error that occurred: {e}", file=sys.stderr)
+            sys.exit(1)
 
     def inspect(self) -> bool:
         prefixes = ["nb_drones:", "start_hub:", "end_hub:", "hub:", "connection:"]
@@ -53,8 +55,7 @@ class Parser(BaseModel):
             return False
 
 def test_parser():
-    parser = Parser(path=Path("/home/hayta/Fly-in/src/test.txt"), config_as_text="", config=Config(nb_drones=0, start_hub="", end_hub="", hubs=[], connections=[]))
-    parser.extract()
-    print(parser.inspect())
+    parser = Parser(path=Path("/home/hayta/Fly-in/src/test.txt"))
+    parser.do_your_job()
 
 test_parser()
