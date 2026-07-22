@@ -12,5 +12,3 @@ connection: roof1-roof2
 connection: roof2-goal
 connection: corridorA-tunnelB [max_link_capacity=2]
 connection: tunnelB-goal
-
-start_hub: hub 10 10 [color=green]
