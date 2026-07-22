@@ -1,5 +1,4 @@
 from pydantic import BaseModel, FilePath
-from pathlib import Path
 import sys
 
 
@@ -54,8 +53,15 @@ class Parser(BaseModel):
             print(f"WATCH OUT!!\nMissing prefixes: {prefixes}", file=sys.stderr)
             return False
 
-def test_parser():
-    parser = Parser(path=Path("/home/hayta/Fly-in/src/test.txt"))
-    parser.do_your_job()
 
-test_parser()
+# def search_line(line: str) -> bool:
+#     if line.startswith("nb_drones:"):
+#         nb_drones = int(line.split(":")[1].strip())
+#         print(f"nb_drones: {nb_drones}")
+#     elif line.startswith("start_hub:"):
+#         name = line.split()[1].strip()
+#         x = int(line.split()[2].strip())
+#         y = int(line.split()[3].strip())
+#         meta_data = line.split()[4].strip()
+#         print(f"start_hub: {name}, x: {x}, y: {y}, meta_data: {meta_data}")
+
