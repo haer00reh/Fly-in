@@ -28,7 +28,6 @@ class drone(BaseModel):
     end_hub: hub
 
 
-
 class Config(BaseModel):
     drones: list[drone] = []
     start: start_hub = start_hub(name="", x=0, y=0, meta_data="")
@@ -38,8 +37,11 @@ class Config(BaseModel):
     config_table: list[str] 
 
     def init(self) -> bool:
-        for line in self.config_table:
-            self.search_line(line)
+        for value in self.config_table.values():
+            self.search_line(value)
+
+    def errors_teller(self, message: str, error_type: int) -> None:
+        pass
 
     def valid_name(self, name: str) -> bool:
         if '-' in name:

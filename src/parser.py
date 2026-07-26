@@ -5,19 +5,32 @@ import sys
 class Parser(BaseModel):
     path: FilePath
     config_as_text: str = ""
-    config_table: list[str] = []
+    config_table: dict[str, str] = {}
 
     def extract(self) -> None:
         with open(self.path, "r") as file:
             self.config_as_text = file.read()
 
+    def error_teller(self, additional_message: str, line_nb: int) -> None:
+        print(f"WATCH OUT!!\nError on line {line_nb}: {additional_message}", file=sys.stderr)
+        sys.exit(1)
+
     def garbage_remover(self) -> None:
-        prefixes = ["nb_drones:", "start_hub:", "end_hub:", "hub:", "connection:"]
-        self.config_table = self.config_as_text.splitlines()
-        self.config_table[:] = (line.strip() for line in self.config_table)
-        for line in self.config_table[:]:
+        prefixes = ("nb_drones:", "start_hub:", "end_hub:", "hub:", "connection:")
+        for key, line in list(self.config_table.items()):
             if not line.startswith(tuple(prefixes)):
-                self.config_table.remove(line)
+                self.config_table.pop(key)
+        for key, value in self.config_table.items():
+            self.config_table[key] = value.partition("#")[0].rstrip()
+
+    def initializer(self) -> None:
+        self.config_table = {}
+        line_nb = 1
+        for line_nb, line in enumerate(self.config_as_text.splitlines(), start=1):
+            line = line.strip()
+            value = line
+            self.config_table[line_nb] = value
+        self.garbage_remover()
 
     def do_your_job(self) -> None:
         try:
@@ -32,36 +45,28 @@ class Parser(BaseModel):
         prefixes = ["nb_drones:", "start_hub:", "end_hub:", "hub:", "connection:"]
         start_count = 0
         end_count = 0
-        nb_drones_count = 0
-        self.garbage_remover()
-        for line in self.config_table:
+        self.initializer()
+        for key, line in self.config_table.items():
             if line.startswith("start_hub:"):
                 start_count += 1
             elif line.startswith("end_hub:"):
                 end_count += 1
-            elif line.startswith("nb_drones:"):
-                nb_drones_count += 1
-        if start_count != 1 or end_count != 1 or nb_drones_count != 1:
-            print(f"WATCH OUT!!\ninvalid count for either of these fields start_hub: {start_count}, end_hub: {end_count}, nb_drones: {nb_drones_count}\nall need to be one!!", file=sys.stderr)
-            return False
-        for line in self.config_table:
-            if line.startswith(tuple(prefixes)):
-                prefixes.remove(line.split(":", 1)[0] + ":")
-        if not prefixes:
-            return True
-        else:
-            print(f"WATCH OUT!!\nMissing prefixes: {prefixes}", file=sys.stderr)
-            return False
+
+            if line.startswith("start_hub:") and start_count > 1:
+                self.error_teller(key, "found another start_hub, there must be exactly one start_hub")
+            elif line.startswith("end_hub:") and end_count > 1:
+                self.error_teller(key, "found another end_hub, there must be exactly one end_hub")
+        return True
 
 
-# def search_line(line: str) -> bool:
-#     if line.startswith("nb_drones:"):
-#         nb_drones = int(line.split(":")[1].strip())
-#         print(f"nb_drones: {nb_drones}")
-#     elif line.startswith("start_hub:"):
-#         name = line.split()[1].strip()
-#         x = int(line.split()[2].strip())
-#         y = int(line.split()[3].strip())
-#         meta_data = line.split()[4].strip()
-#         print(f"start_hub: {name}, x: {x}, y: {y}, meta_data: {meta_data}")
+        # if start_count != 1 or end_count != 1:
+        #     self.error_teller("there must be exactly one start_hub and one end_hub", key)
+        # for line in self.config_table:
+        #     if line.startswith(tuple(prefixes)):
+        #         prefixes.remove(line.split(":", 1)[0] + ":")
+        # if not prefixes:
+        #     return True
+        # else:
+        #     print(f"WATCH OUT!!\nMissing prefixes: {prefixes}", file=sys.stderr)
+        #     return False
 
