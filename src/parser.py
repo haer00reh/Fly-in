@@ -12,16 +12,28 @@ class Parser(BaseModel):
             self.config_as_text = file.read()
 
     def error_teller(self, additional_message: str, line_nb: int) -> None:
-        print(f"WATCH OUT!!\nError on line {line_nb}: {additional_message}", file=sys.stderr)
+        if line_nb > 0:
+            print(f"WATCH OUT!!\nError on line {line_nb}: {additional_message}", file=sys.stderr)
+        else:
+            print(f"WATCH OUT!!\nError: {additional_message}", file=sys.stderr)
         sys.exit(1)
 
     def garbage_remover(self) -> None:
         prefixes = ("nb_drones:", "start_hub:", "end_hub:", "hub:", "connection:")
         for key, line in list(self.config_table.items()):
-            if not line.startswith(tuple(prefixes)):
+            if line.startswith('#'):
                 self.config_table.pop(key)
         for key, value in self.config_table.items():
             self.config_table[key] = value.partition("#")[0].rstrip()
+        for line in self.config_table.values():
+            if not line.startswith("nb_drones:"):
+                self.error_teller("first line must be nb_drones:", 1)
+            else:
+                break
+
+        for key, line in self.config_table.items():
+            if not line.startswith(prefixes):
+                self.error_teller(f"invalid prefix '{line}'", key)
 
     def initializer(self) -> None:
         self.config_table = {}
@@ -53,10 +65,17 @@ class Parser(BaseModel):
                 end_count += 1
 
             if line.startswith("start_hub:") and start_count > 1:
-                self.error_teller(key, "found another start_hub, there must be exactly one start_hub")
+                self.error_teller("found another start_hub, there must be exactly one start_hub", key)
             elif line.startswith("end_hub:") and end_count > 1:
-                self.error_teller(key, "found another end_hub, there must be exactly one end_hub")
-        return True
+                self.error_teller("found another end_hub, there must be exactly one end_hub", key)
+        for line in self.config_table.values():
+            if line.startswith(tuple(prefixes)):
+                prefixes.remove(line.split(":", 1)[0] + ":")
+        if not prefixes:
+            return True
+        else:
+            self.error_teller(f"Missing prefixes: {prefixes}", 0)
+            return False
 
 
         # if start_count != 1 or end_count != 1:
