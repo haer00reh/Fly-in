@@ -7,6 +7,7 @@ class Parser(BaseModel):
     config_as_text: str = ""
     config_table: dict[str, str] = {}
 
+
     def extract(self) -> None:
         with open(self.path, "r") as file:
             self.config_as_text = file.read()
@@ -32,7 +33,7 @@ class Parser(BaseModel):
                 break
 
         for key, line in self.config_table.items():
-            if not line.startswith(prefixes):
+            if not line.startswith(prefixes) and line in {' ', '\t', '\n'}:
                 self.error_teller(f"invalid prefix '{line}'", key)
 
     def initializer(self) -> None:

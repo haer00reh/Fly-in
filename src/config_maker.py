@@ -34,40 +34,44 @@ class Config(BaseModel):
     end: end_hub = end_hub(name="", x=0, y=0, meta_data="")
     hubs: list[hub] = []
     connections: list[connection] = []
-    config_table: list[str] 
+    config_table: dict[int, str] = {}
 
-    def init(self) -> bool:
-        for value in self.config_table.values():
-            self.search_line(value)
+    def error_teller(self, additional_message: str, line_nb: int) -> None:
+        if line_nb > 0:
+            print(f"WATCH OUT!!\nError on line {line_nb}: {additional_message}", file=sys.stderr)
+        else:
+            print(f"WATCH OUT!!\nError: {additional_message}", file=sys.stderr)
+        sys.exit(1)
 
-    def errors_teller(self, message: str, error_type: int) -> None:
-        pass
+    def init(self, config_table: dict[int, str]) -> bool:
+        for key, line in config_table.items():
+            self.search_line(line, key)
 
-    def valid_name(self, name: str) -> bool:
+    def valid_name(self, name: str, line_nb: int) -> bool:
         if '-' in name:
-            print(f"WATCH OUT!!\ninvalid name: {name}\nname cannot contain '-' character", file=sys.stderr)
+            self.error_teller(f"invalid name '{name}'", line_nb)
             sys.exit(1)
 
-    def search_line(self, line: str) -> bool:
+    def search_line(self, line: str, line_nb: int) -> bool:
         if line.startswith("nb_drones:"):
             nb_drones = int(line.split(":")[1].strip())
             for i in range(nb_drones):
                 self.drones.append(drone(id=i+1, start_hub=self.start, end_hub=self.end))
         elif line.startswith("start_hub:"):
             self.start.name = line.split()[1].strip()
-            self.valid_name(self.start.name)
+            self.valid_name(self.start.name, line_nb)
             self.start.x = int(line.split()[2].strip())
             self.start.y = int(line.split()[3].strip())
             self.start.meta_data = line.split()[4].strip()
         elif line.startswith("end_hub:"):
             self.end.name = line.split()[1].strip()
-            self.valid_name(self.end.name)
+            self.valid_name(self.end.name, line_nb)
             self.end.x = int(line.split()[2].strip())
             self.end.y = int(line.split()[3].strip())
             self.end.meta_data = line.split()[4].strip()
         elif line.startswith("hub:"):
             hub_name = line.split()[1].strip()
-            self.valid_name(hub_name)
+            self.valid_name(hub_name, line_nb)
             hub_x = int(line.split()[2].strip())
             hub_y = int(line.split()[3].strip())
             hub_meta_data = line.split()[4].strip()
