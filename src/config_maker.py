@@ -5,13 +5,25 @@ class hub(BaseModel):
     name: str
     x: int
     y: int
-    meta_data: str
+    meta_data_as_text: str
+    color: str
+    max_drones: int
+
+    def init_metadata(self):
+        self.color, self.max_drones = hub_parser(self.meta_data_as_text)
+
+
 
 
 class connection(BaseModel):
     hub1: hub
     hub2: hub
-    meta_data: str
+    link_cap: int
+    meta_data_as_text: str
+    max_link_capacity: int
+
+    def init_metadata(self):
+        self.max_link_capacity = link_parser(self.meta_data_as_text)
 
 
 class end_hub(hub):
@@ -28,13 +40,33 @@ class drone(BaseModel):
     end_hub: hub
 
 
+def link_parser(line: str):
+    if "max_link_capacity" in line:
+        max_link_capacity = line.split("max_link_capacity=")[1].split()[0]
+        if int(max_link_capacity) < 0:
+            print(f"WATCH OUT!!\nError: invalid max_link_capacity '{max_link_capacity}'", file=sys.stderr)
+            sys.exit(1)
+        return int(max_link_capacity)
+
+def hub_parser(line: str):
+    package = []
+    if "color" in line:
+        color = line.split("color=")[1].split()[0]
+        package.append(color)
+    if "max_drones" in line:
+        max_drones = line.split("max_drones=")[1].split()[0]
+        if int(max_drones) < 0:
+            print(f"WATCH OUT!!\nError: invalid max_drones '{max_drones}'", file=sys.stderr)
+            sys.exit(1)
+        package.append(int(max_drones))
+    return tuple(package)
+
 class Config(BaseModel):
     drones: list[drone] = []
     start: start_hub = start_hub(name="", x=0, y=0, meta_data="")
     end: end_hub = end_hub(name="", x=0, y=0, meta_data="")
     hubs: list[hub] = []
     connections: list[connection] = []
-    config_table: dict[int, str] = {}
 
     def error_teller(self, additional_message: str, line_nb: int) -> None:
         if line_nb > 0:
@@ -75,9 +107,8 @@ class Config(BaseModel):
             hub_x = int(line.split()[2].strip())
             hub_y = int(line.split()[3].strip())
             hub_meta_data = line.split()[4].strip()
-            self.hubs.append(hub(name=hub_name, x=hub_x, y=hub_y, meta_data=hub_meta_data))
+            self.hubs.append(hub(name=hub_name, x=hub_x, y=hub_y, meta_data_as_text=hub_meta_data))
         elif line.startswith("connection:"):
             hub1_name = line.split("-")[0].split()[1].strip()
-            print(f"hub1_name: {hub1_name}")
             hub2_name = line.split("-")[1].strip()
-            print(f"hub2_name: {hub2_name}")
+
