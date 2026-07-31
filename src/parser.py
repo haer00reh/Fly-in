@@ -58,17 +58,23 @@ class Parser(BaseModel):
         prefixes = ["nb_drones:", "start_hub:", "end_hub:", "hub:", "connection:"]
         start_count = 0
         end_count = 0
+        nb_drones_count = 0
         self.initializer()
         for key, line in self.config_table.items():
             if line.startswith("start_hub:"):
                 start_count += 1
             elif line.startswith("end_hub:"):
                 end_count += 1
+            elif line.startswith("nb_drones:"):
+                nb_drones_count += 1
 
             if line.startswith("start_hub:") and start_count > 1:
                 self.error_teller("found another start_hub, there must be exactly one start_hub", key)
             elif line.startswith("end_hub:") and end_count > 1:
                 self.error_teller("found another end_hub, there must be exactly one end_hub", key)
+            elif line.startswith("nb_drones:") and nb_drones_count > 1:
+                self.error_teller("found another nb_drones, there must be exactly one nb_drones", key)
+
         for line in self.config_table.values():
             if line.startswith(tuple(prefixes)):
                 prefixes.remove(line.split(":", 1)[0] + ":")
