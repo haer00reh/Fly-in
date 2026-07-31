@@ -1,8 +1,7 @@
 nb_drones: 3
 start_hub: start 0 0
 end_hub: goal 5 0
-hub: mid 2 0
-hub: island 8 8
+hub: mid 2 0 [speed=fast]
 
 connection: start-mid
-connection: island-goal
+connection: mid-goal

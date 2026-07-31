@@ -26,6 +26,7 @@ class connection(BaseModel):
     link_cap: int | None = None
     meta_data_as_text: str | None = None
     max_link_capacity: int | None = None
+    line_nb: int | None = None
 
     def init_metadata(self):
         self.max_link_capacity = link_parser(self.meta_data_as_text, self.line_nb)
@@ -46,32 +47,40 @@ class drone(BaseModel):
     end_hub: hub | None = None
 
 
-def link_parser(line: str):
+def link_parser(line: str, line_nb: int):
     if "max_link_capacity" in line:
         max_link_capacity = line.split("max_link_capacity=")[1].split()[0]
-        if int(max_link_capacity) < 0:
-            print(f"WATCH OUT!!\nError: invalid max_link_capacity '{max_link_capacity}'", file=sys.stderr)
+        try:
+            if int(max_link_capacity) < 0:
+                print(f"WATCH OUT!!\nError in line {line_nb}: invalid max_link_capacity '{max_link_capacity}'", file=sys.stderr)
+                sys.exit(1)
+        except ValueError:
+            print(f"WATCH OUT!!\nError in line {line_nb}: invalid max_link_capacity '{max_link_capacity}'", file=sys.stderr)
             sys.exit(1)
         return int(max_link_capacity)
 
 def hub_parser(line: str, line_nb: int):
     package = []
+    meta_prefixes = ("color", "max_drones", "zone")
     zone_prefixes = ("normal", "restricter", "blocked", "priority")
     if "color" in line:
         color = line.split("color=")[1].split()[0]
         package.append(color)
-    if "max_drones" in line:
+    elif "max_drones" in line:
         max_drones = line.split("max_drones=")[1].split()[0].split("]")[0]
         if int(max_drones) <= 0:
             print(f"WATCH OUT!!\nError in line {line_nb}: invalid max_drones '{max_drones}'", file=sys.stderr)
             sys.exit(1)
         package.append(int(max_drones))
-    if "zone" in line:
+    elif "zone" in line:
         zone_type = line.split("zone=")[1].split()[0].split("]")[0]
         if zone_type not in zone_prefixes:
             print(f"WATCH OUT!!\nError in line {line_nb}: invalid zone type '{zone_type}'", file=sys.stderr)
             sys.exit(1)
         package.append(zone_type)
+    elif not any(prefix in line for prefix in meta_prefixes):
+        print(f"WATCH OUT!!\nError in line {line_nb}: invalid meta data '{line}'", file=sys.stderr)
+        sys.exit(1)
     return tuple(package)
 
 class Config(BaseModel):
@@ -88,11 +97,31 @@ class Config(BaseModel):
             print(f"WATCH OUT!!\nError: {additional_message}", file=sys.stderr)
         sys.exit(1)
 
+    def if_disconnected_graph(self) -> bool:
+        visited = set()
+        def dfs(hub):
+            if hub.name in visited:
+                return
+            visited.add(hub.name)
+            for connection in self.connections:
+                if connection.hub1.name == hub.name:
+                    dfs(connection.hub2)
+                elif connection.hub2.name == hub.name:
+                    dfs(connection.hub1)
+
+        dfs(self.start)
+        for hub in self.hubs + [self.end]:
+            if hub.name not in visited:
+                self.error_teller(f"hub '{hub.name}' is disconnected from the graph", hub.line_nb)
+
     def init(self, config_table: dict[int, str]) -> bool:
         for key, line in config_table.items():
             self.search_line(line, key)
         for hub in self.hubs:
             hub.init_metadata()
+        for connection in self.connections:
+            connection.init_metadata()
+        self.if_disconnected_graph()
 
     def duplicate_connections(self, line_nb: int) -> bool:
         for i in range(len(self.connections)):
@@ -171,5 +200,5 @@ class Config(BaseModel):
                 self.error_teller(f"invalid connection '{hub1_name}-{hub2_name}'", line_nb)
             self.hub_exists(hub1_name, line_nb)
             self.hub_exists(hub2_name, line_nb)
-            self.connections.append(connection(hub1=hub(name=hub1_name, line_nb=line_nb), hub2=hub(name=hub2_name, line_nb=line_nb), meta_data_as_text=meta_data))
+            self.connections.append(connection(hub1=hub(name=hub1_name, line_nb=line_nb), hub2=hub(name=hub2_name, line_nb=line_nb), meta_data_as_text=meta_data, line_nb=line_nb))
             self.duplicate_connections(line_nb)
