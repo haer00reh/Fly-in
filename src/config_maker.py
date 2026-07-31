@@ -2,12 +2,12 @@ from pydantic import BaseModel
 import sys
 
 class hub(BaseModel):
-    name: str
-    x: int
-    y: int
-    meta_data_as_text: str
-    color: str
-    max_drones: int
+    name: str | None = None
+    x: int | None = None
+    y: int | None = None
+    meta_data_as_text: str | None = None
+    color: str | None = None
+    max_drones: int | None = None
 
     def init_metadata(self):
         self.color, self.max_drones = hub_parser(self.meta_data_as_text)
@@ -16,14 +16,15 @@ class hub(BaseModel):
 
 
 class connection(BaseModel):
-    hub1: hub
-    hub2: hub
-    link_cap: int
-    meta_data_as_text: str
-    max_link_capacity: int
+    hub1: hub | None = None
+    hub2: hub | None = None
+    link_cap: int | None = None
+    meta_data_as_text: str | None = None
+    max_link_capacity: int | None = None
 
     def init_metadata(self):
         self.max_link_capacity = link_parser(self.meta_data_as_text)
+
 
 
 class end_hub(hub):
@@ -35,9 +36,9 @@ class start_hub(hub):
 
 
 class drone(BaseModel):
-    id: int
-    start_hub: hub
-    end_hub: hub
+    id: int | None = None
+    start_hub: hub | None = None
+    end_hub: hub | None = None
 
 
 def link_parser(line: str):
@@ -63,8 +64,8 @@ def hub_parser(line: str):
 
 class Config(BaseModel):
     drones: list[drone] = []
-    start: start_hub = start_hub(name="", x=0, y=0, meta_data="")
-    end: end_hub = end_hub(name="", x=0, y=0, meta_data="")
+    start: start_hub = start_hub()
+    end: end_hub = end_hub()
     hubs: list[hub] = []
     connections: list[connection] = []
 
@@ -78,6 +79,23 @@ class Config(BaseModel):
     def init(self, config_table: dict[int, str]) -> bool:
         for key, line in config_table.items():
             self.search_line(line, key)
+
+    def duplicate_connections(self, line_nb: int) -> bool:
+        for i in range(len(self.connections)):
+            for j in range(i+1, len(self.connections)):
+                if (self.connections[i].hub1.name == self.connections[j].hub1.name and
+                    self.connections[i].hub2.name == self.connections[j].hub2.name) or \
+                   (self.connections[i].hub1.name == self.connections[j].hub2.name and
+                    self.connections[i].hub2.name == self.connections[j].hub1.name):
+                    self.error_teller(f"duplicate connection '{self.connections[i].hub1.name}-{self.connections[i].hub2.name}'", line_nb)
+
+    def hub_exists(self, hub_name: str, line_nb: int) -> bool:
+        for hub in self.hubs:
+            if hub.name == hub_name:
+                return True
+        if self.start.name == hub_name or self.end.name == hub_name:
+            return True
+        self.error_teller(f"hub '{hub_name}' does not exist", line_nb)
 
     def valid_name(self, name: str, line_nb: int) -> bool:
         if '-' in name:
@@ -94,13 +112,13 @@ class Config(BaseModel):
             self.valid_name(self.start.name, line_nb)
             self.start.x = int(line.split()[2].strip())
             self.start.y = int(line.split()[3].strip())
-            self.start.meta_data = line.split()[4].strip()
+            self.start.meta_data_as_text = line.split()[4].strip()
         elif line.startswith("end_hub:"):
             self.end.name = line.split()[1].strip()
             self.valid_name(self.end.name, line_nb)
             self.end.x = int(line.split()[2].strip())
             self.end.y = int(line.split()[3].strip())
-            self.end.meta_data = line.split()[4].strip()
+            self.end.meta_data_as_text = line.split()[4].strip()
         elif line.startswith("hub:"):
             hub_name = line.split()[1].strip()
             self.valid_name(hub_name, line_nb)
@@ -110,5 +128,13 @@ class Config(BaseModel):
             self.hubs.append(hub(name=hub_name, x=hub_x, y=hub_y, meta_data_as_text=hub_meta_data))
         elif line.startswith("connection:"):
             hub1_name = line.split("-")[0].split()[1].strip()
-            hub2_name = line.split("-")[1].strip()
-
+            hub2_name = line.split("-")[1].split()[0].strip()
+            meta_data = ""
+            if len(line.split('[')) == 2:
+                meta_data = line.split('[')[1].split(']')[0].strip()
+            if hub1_name == hub2_name:
+                self.error_teller(f"invalid connection '{hub1_name}-{hub2_name}'", line_nb)
+            self.hub_exists(hub1_name, line_nb)
+            self.hub_exists(hub2_name, line_nb)
+            self.connections.append(connection(hub1=hub(name=hub1_name), hub2=hub(name=hub2_name), meta_data_as_text=meta_data))
+            self.duplicate_connections(line_nb)
