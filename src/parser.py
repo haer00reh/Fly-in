@@ -26,6 +26,10 @@ class Parser(BaseModel):
                 self.config_table.pop(key)
         for key, value in self.config_table.items():
             self.config_table[key] = value.partition("#")[0].rstrip()
+
+        for key, line in list(self.config_table.items()):
+            if not line.strip():
+                self.config_table.pop(key)
         for line in self.config_table.values():
             if not line.startswith("nb_drones:"):
                 self.error_teller("first line must be nb_drones:", 1)
