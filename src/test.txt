@@ -1,7 +1,9 @@
 nb_drones: 3
 start_hub: start 0 0
 end_hub: goal 5 0
-hub: mid 2 0 [zone=blocked]
+hub: mid 2 0
+hub: far 2 1
 
 connection: start-mid
-connection: mid-goal
+connection: mid-far
+connection: far-start

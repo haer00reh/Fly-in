@@ -180,6 +180,7 @@ class Config(BaseModel):
             self.valid_name(self.start.name, line_nb)
             self.start.x = int(line.split()[2].strip())
             self.start.y = int(line.split()[3].strip())
+            self.start.line_nb = line_nb
             if len(line.split()) == 5:
                 self.start.meta_data_as_text = line.split()[4].strip()
             else:
@@ -189,6 +190,7 @@ class Config(BaseModel):
             self.valid_name(self.end.name, line_nb)
             self.end.x = int(line.split()[2].strip())
             self.end.y = int(line.split()[3].strip())
+            self.end.line_nb = line_nb
             if len(line.split()) == 5:
                 self.end.meta_data_as_text = line.split()[4].strip()
             else:
