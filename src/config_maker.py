@@ -13,7 +13,7 @@ class hub(BaseModel):
 
     def init_metadata(self):
         try:
-            if self.meta_data_as_text is not None:
+            if self.meta_data_as_text:
                 self.color, self.max_drones, self.zone_type = hub_parser(self.meta_data_as_text, self.line_nb)
         except ValueError:
             pass
@@ -61,23 +61,29 @@ def link_parser(line: str, line_nb: int):
 
 def hub_parser(line: str, line_nb: int):
     package = []
-    meta_prefixes = ("color", "max_drones", "zone")
+    meta_prefixes = ("color=", "max_drones=", "zone=")
     zone_prefixes = ("normal", "restricter", "blocked", "priority")
-    if "color" in line:
+    if "color=" in line:
         color = line.split("color=")[1].split()[0]
         package.append(color)
-    elif "max_drones" in line:
+    elif not "color=" in line:
+        package.append(None)
+    if "max_drones=" in line:
         max_drones = line.split("max_drones=")[1].split()[0].split("]")[0]
         if int(max_drones) <= 0:
             print(f"WATCH OUT!!\nError in line {line_nb}: invalid max_drones '{max_drones}'", file=sys.stderr)
             sys.exit(1)
         package.append(int(max_drones))
-    elif "zone" in line:
+    elif not "max_drones=" in line:
+        package.append(None)
+    if "zone=" in line:
         zone_type = line.split("zone=")[1].split()[0].split("]")[0]
         if zone_type not in zone_prefixes:
             print(f"WATCH OUT!!\nError in line {line_nb}: invalid zone type '{zone_type}'", file=sys.stderr)
             sys.exit(1)
         package.append(zone_type)
+    elif not "zone=" in line:
+        package.append(None)
     elif not any(prefix in line for prefix in meta_prefixes):
         print(f"WATCH OUT!!\nError in line {line_nb}: invalid meta data '{line}'", file=sys.stderr)
         sys.exit(1)
@@ -97,6 +103,8 @@ class Config(BaseModel):
             print(f"WATCH OUT!!\nError: {additional_message}", file=sys.stderr)
         sys.exit(1)
 
+
+
     def if_disconnected_graph(self) -> bool:
         visited = set()
         def dfs(hub):
@@ -104,15 +112,15 @@ class Config(BaseModel):
                 return
             visited.add(hub.name)
             for connection in self.connections:
-                if connection.hub1.name == hub.name:
+                if connection.hub1.name == hub.name and connection.hub2.zone_type != "blocked":
                     dfs(connection.hub2)
-                elif connection.hub2.name == hub.name:
+                elif connection.hub2.name == hub.name and connection.hub1.zone_type != "blocked":
                     dfs(connection.hub1)
 
         dfs(self.start)
         for hub in self.hubs + [self.end]:
             if hub.name not in visited:
-                self.error_teller(f"hub '{hub.name}' is disconnected from the graph", hub.line_nb)
+                self.error_teller(f"hub '{hub.name}' causing disconnection in the graph", hub.line_nb)
 
     def init(self, config_table: dict[int, str]) -> bool:
         for key, line in config_table.items():
@@ -149,7 +157,16 @@ class Config(BaseModel):
     def valid_name(self, name: str, line_nb: int) -> bool:
         if '-' in name:
             self.error_teller(f"invalid name '{name}'", line_nb)
-            sys.exit(1)
+
+    def search_for_hub(self, hub_name: str) -> hub | None:
+        for hub in self.hubs:
+            if hub.name == hub_name:
+                return hub
+        if self.start.name == hub_name:
+            return self.start
+        if self.end.name == hub_name:
+            return self.end
+        return None
 
     def search_line(self, line: str, line_nb: int) -> bool:
         if line.startswith("nb_drones:"):
@@ -184,10 +201,7 @@ class Config(BaseModel):
                 hub_y = int(line.split()[3].strip())
             except ValueError:
                 self.error_teller(f"invalid coordinates for hub '{hub_name}'", line_nb)
-            if len(line.split()) == 5:
-                hub_meta_data = line.split()[4].strip()
-            else:
-                hub_meta_data = None
+            hub_meta_data = " ".join(line.split()[4:])
             self.hubs.append(hub(name=hub_name, x=hub_x, y=hub_y, meta_data_as_text=hub_meta_data, line_nb=line_nb))
             self.duplicate_hubs(line_nb)
         elif line.startswith("connection:"):
@@ -200,5 +214,5 @@ class Config(BaseModel):
                 self.error_teller(f"invalid connection '{hub1_name}-{hub2_name}'", line_nb)
             self.hub_exists(hub1_name, line_nb)
             self.hub_exists(hub2_name, line_nb)
-            self.connections.append(connection(hub1=hub(name=hub1_name, line_nb=line_nb), hub2=hub(name=hub2_name, line_nb=line_nb), meta_data_as_text=meta_data, line_nb=line_nb))
+            self.connections.append(connection(hub1=self.search_for_hub(hub1_name), hub2=self.search_for_hub(hub2_name), meta_data_as_text=meta_data, line_nb=line_nb))
             self.duplicate_connections(line_nb)
