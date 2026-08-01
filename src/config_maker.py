@@ -34,10 +34,12 @@ class connection(BaseModel):
 
 
 class end_hub(hub):
+    max_drones: int = sys.maxsize
     pass
 
 
 class start_hub(hub):
+    max_drones: int = sys.maxsize
     pass
 
 
