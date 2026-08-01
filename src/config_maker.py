@@ -62,7 +62,7 @@ def link_parser(line: str, line_nb: int):
 def hub_parser(line: str, line_nb: int):
     package = []
     meta_prefixes = ("color=", "max_drones=", "zone=")
-    zone_prefixes = ("normal", "restricter", "blocked", "priority")
+    zone_prefixes = ("normal", "restricted", "blocked", "priority")
     if "color=" in line:
         color = line.split("color=")[1].split()[0]
         package.append(color)
