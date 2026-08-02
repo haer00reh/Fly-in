@@ -45,8 +45,8 @@ class start_hub(hub):
 
 class drone(BaseModel):
     id: int | None = None
-    start_hub: hub | None = None
-    end_hub: hub | None = None
+    finished: bool = False
+    in_queue: bool = False
 
 
 def link_parser(line: str, line_nb: int):
@@ -176,7 +176,7 @@ class Config(BaseModel):
             if nb_drones <= 0:
                 self.error_teller(f"invalid number of drones '{nb_drones}'", line_nb)
             for i in range(nb_drones):
-                self.drones.append(drone(id=i+1, start_hub=self.start, end_hub=self.end))
+                self.drones.append(drone(id=i+1))
         elif line.startswith("start_hub:"):
             self.start.name = line.split()[1].strip()
             self.valid_name(self.start.name, line_nb)
