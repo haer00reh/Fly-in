@@ -34,13 +34,20 @@ class connection(BaseModel):
 
 
 class end_hub(hub):
-    max_drones: int = sys.maxsize
-    pass
+
+    def init_metadata(self):
+        self.color, self.max_drones, self.zone_type = hub_parser(self.meta_data_as_text, self.line_nb)
+        self.max_drones = sys.maxsize
+        self.zone_type = "normal"
 
 
 class start_hub(hub):
-    max_drones: int = sys.maxsize
-    pass
+
+    def init_metadata(self):
+        self.color, self.max_drones, self.zone_type = hub_parser(self.meta_data_as_text, self.line_nb)
+        self.max_drones = sys.maxsize
+        self.zone_type = "normal"
+
 
 
 class drone(BaseModel):
@@ -67,6 +74,7 @@ def hub_parser(line: str, line_nb: int):
     zone_prefixes = ("normal", "restricted", "blocked", "priority")
     if "color=" in line:
         color = line.split("color=")[1].split()[0]
+        color = color.replace(']', '')
         package.append(color)
     elif not "color=" in line:
         package.append(None)
@@ -131,6 +139,8 @@ class Config(BaseModel):
             hub.init_metadata()
         for connection in self.connections:
             connection.init_metadata()
+        self.start.init_metadata()
+        self.end.init_metadata()
         self.if_disconnected_graph()
 
     def duplicate_connections(self, line_nb: int) -> bool:

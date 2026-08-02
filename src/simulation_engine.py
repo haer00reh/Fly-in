@@ -72,8 +72,9 @@ class simulation_engine(BaseModel):
         results: dict[int, tuple[list[hub], int]] = {}
 
         for d in self.config.drones:
-            path, cost = self.dijkstra_once(d.start_hub, d.end_hub)
+            path, cost = self.dijkstra_once(self.config.start, self.config.end)
             results[d.id] = (path, cost)
+            print(f"Drone {d.id}: Path: {[hub.name for hub in path]}, Cost: {cost}")
 
         return results
 
