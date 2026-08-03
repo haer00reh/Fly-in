@@ -9,6 +9,6 @@ def test_parser():
     config = Config()
     config.init(parser.config_table)
     sim_engine = simulation_engine(config=config)
-    sim_engine.path_finder()
+    print(sim_engine.path_finder())
 
 test_parser()

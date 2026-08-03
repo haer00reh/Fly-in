@@ -23,7 +23,7 @@ class hub(BaseModel):
 class connection(BaseModel):
     hub1: hub | None = None
     hub2: hub | None = None
-    link_cap: int | None = None
+    occupied: bool = False
     meta_data_as_text: str | None = None
     max_link_capacity: int | None = None
     line_nb: int | None = None

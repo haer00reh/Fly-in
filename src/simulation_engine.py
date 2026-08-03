@@ -1,4 +1,5 @@
 import heapq
+from os import path
 
 from config_maker import Config, hub, connection, drone, start_hub, end_hub
 from pydantic import BaseModel
@@ -14,6 +15,8 @@ ZONE_COST = {
 class simulation_engine(BaseModel):
     config: Config | None = None
     adjacency_list: dict[str, list[tuple[hub, connection]]] = {}
+    path: list[str] = []
+    cost: int = 0
 
     def build_adjacency(self) -> None:
         all_hubs = {self.config.start.name: self.config.start,
@@ -67,16 +70,15 @@ class simulation_engine(BaseModel):
 
         return path, cheapest_distances[end.name]
 
-    def path_finder(self) -> dict[int, tuple[list[hub], int]]:
+    def path_finder(self) -> bool:
         self.build_adjacency()
-        results: dict[int, tuple[list[hub], int]] = {}
+        results: list = []
 
-        for d in self.config.drones:
-            path, cost = self.dijkstra_once(self.config.start, self.config.end)
-            results[d.id] = (path, cost)
-            print(f"Drone {d.id}: Path: {[hub.name for hub in path]}, Cost: {cost}")
+        hubs, self.cost = self.dijkstra_once(self.config.start, self.config.end)
+        results.append(( [hub.name for hub in hubs], self.cost ))
 
-        return results
+        self.path = [hub.name for hub in hubs]
+        return True if self.path and self.cost != -1 else False
 
     def turn_scheduler(self):
         pass
