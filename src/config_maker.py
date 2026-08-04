@@ -54,7 +54,13 @@ class drone(BaseModel):
     id: int | None = None
     finished: bool = False
     in_queue: bool = False
-
+    current_hub: hub | None = None
+    zone_occupancy: dict[str, int] | None = None
+    connection_occupancy: dict[str, int] | None = None
+    transit_turns_left: int = 0
+    transit_target: hub | None = None
+    path: list[hub] = []
+    path_index: int = 0
 
 def link_parser(line: str, line_nb: int):
     if "max_link_capacity" in line:
@@ -179,6 +185,16 @@ class Config(BaseModel):
         if self.end.name == hub_name:
             return self.end
         return None
+
+    def assign_drone_attributes(self, path: list[hub]) -> None:
+        for d in self.drones:
+            d.path = path
+            d.current_hub = self.start
+            d.path_index = 0
+            d.finished = False
+            d.in_queue = False
+            d.transit_turns_left = 0
+            d.transit_target = None
 
     def search_line(self, line: str, line_nb: int) -> bool:
         if line.startswith("nb_drones:"):
