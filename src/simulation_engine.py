@@ -142,7 +142,7 @@ class simulation_engine(BaseModel):
                     zone_occupancy[next_hub.name] = zone_occupancy.get(next_hub.name, 0) + 1
                     d.transit_turns_left = zone_cost
                     d.transit_target = next_hub
-                    d.transit_conn_key = conn_key 
+                    d.transit_conn_key = conn_key
                     turn_moves.append(f"D{d.id}-{conn_key}")
 
             turn_log.append(" ".join(turn_moves))
