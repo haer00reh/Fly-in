@@ -88,12 +88,12 @@ class simulation_engine(BaseModel):
         return True if self.path and self.cost != -1 else False
 
     def turn_scheduler(self) -> list[str]:
-        turn_log: list[str] = []
+        turn_log: list[tuple] = []
         zone_occupancy = {self.config.start.name: len(self.config.drones)}
         connection_occupancy: dict[str, int] = {}
 
         while not all(d.finished for d in self.config.drones):
-            turn_moves: list[str] = []
+            turn_moves: dict[int, str] = {}
 
             for d in self.config.drones:
                 if d.finished:
@@ -102,11 +102,11 @@ class simulation_engine(BaseModel):
                     d.transit_turns_left -= 1
                     if d.transit_turns_left == 0:
                         zone_occupancy[d.current_hub.name] -= 1
-                        connection_occupancy[d.transit_conn_key] -= 1 
+                        connection_occupancy[d.transit_conn_key] -= 1
                         d.current_hub = d.transit_target
                         d.path_index += 1
                         zone_occupancy[d.current_hub.name] = zone_occupancy.get(d.current_hub.name, 0) + 1
-                        turn_moves.append(f"D{d.id}-{d.current_hub.name}")
+                        turn_moves[d.id] = d.current_hub.name
                         if d.current_hub.name == self.config.end.name:
                             d.finished = True
             for d in self.config.drones:
@@ -135,7 +135,7 @@ class simulation_engine(BaseModel):
                     connection_occupancy[conn_key] -= 1
                     d.current_hub = next_hub
                     d.path_index += 1
-                    turn_moves.append(f"D{d.id}-{next_hub.name}")
+                    turn_moves[d.id] = next_hub.name
                     if next_hub.name == self.config.end.name:
                         d.finished = True
                 else:
@@ -143,8 +143,8 @@ class simulation_engine(BaseModel):
                     d.transit_turns_left = zone_cost
                     d.transit_target = next_hub
                     d.transit_conn_key = conn_key
-                    turn_moves.append(f"D{d.id}-{conn_key}")
+                    turn_moves[d.id] = conn_key
 
-            turn_log.append(" ".join(turn_moves))
+            turn_log.append(tuple(turn_moves.items()))
 
         return turn_log

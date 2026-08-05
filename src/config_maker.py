@@ -61,6 +61,7 @@ class drone(BaseModel):
     transit_target: hub | None = None
     path: list[hub] = []
     path_index: int = 0
+    
 
 def link_parser(line: str, line_nb: int):
     if "max_link_capacity" in line:
