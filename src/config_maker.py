@@ -322,7 +322,7 @@ class Config(BaseModel):
     def assign_drone_attributes(self, path: list[hub]) -> None:
         """Assign the path and state fields for all drones."""
         for drone_item in self.drones:
-            drone_item.path = path
+            drone_item.path = list(path)
             drone_item.current_hub = self.start
             drone_item.path_index = 0
             drone_item.finished = False
