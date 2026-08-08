@@ -280,7 +280,7 @@ class simulation_engine(BaseModel):
                                 d.transit_target = next_hub
                                 d.transit_conn_key = conn_key
                                 assert d.id is not None
-                                turn_moves[d.id] = conn_key
+                                turn_moves[d.id] = next_hub.name
                             continue
                     d.in_queue = True
                     continue
@@ -311,7 +311,7 @@ class simulation_engine(BaseModel):
                     d.transit_target = next_hub
                     d.transit_conn_key = conn_key
                     assert d.id is not None
-                    turn_moves[d.id] = conn_key
+                    turn_moves[d.id] = next_hub.name
 
             turn_log.append(tuple(turn_moves.items()))
 

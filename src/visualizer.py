@@ -88,12 +88,8 @@ def render_text(
     text: str,
     pos: tuple[int, int],
     color: tuple[int, int, int] = TEXT_COLOR,
-    shadow: bool = True,
 ) -> None:
-    """Render a text label with optional shadowing."""
-    if shadow:
-        shadow_surf = font.render(text, True, (12, 16, 22))
-        screen.blit(shadow_surf, (pos[0] + 1, pos[1] + 1))
+    """Render a text label."""
     screen.blit(font.render(text, True, color), pos)
 
 
@@ -110,24 +106,30 @@ class DroneIcon:
         self.id = id
         self.pos = list(start_pos)
         self.target = list(start_pos)
+        self.start_pos = list(start_pos)
+        self.progress = 1.0
         self.drone_img = drone_img
         self.current_hub_name: str | None = None
         self.next_hub_name: str | None = None
 
     def set_target(self, pos: tuple[float, float]) -> None:
         """Set the drone icon's movement target."""
+        self.start_pos = list(self.pos)
         self.target = list(pos)
+        self.progress = 0.0
 
-    def update(self, speed: float = 0.12) -> None:
-        """Move the drone icon toward its target."""
-        dx = self.target[0] - self.pos[0]
-        dy = self.target[1] - self.pos[1]
-        dist = (dx**2 + dy**2) ** 0.5
-        if dist > speed:
-            self.pos[0] += dx / dist * speed
-            self.pos[1] += dy / dist * speed
-        else:
+    def update(self, step: float = 1 / 60) -> None:
+        """Move the drone icon toward its target over one turn."""
+        if self.progress >= 1.0:
             self.pos[0], self.pos[1] = self.target
+            return
+        self.progress = min(1.0, self.progress + step)
+        self.pos[0] = self.start_pos[0] + (
+            self.target[0] - self.start_pos[0]
+        ) * self.progress
+        self.pos[1] = self.start_pos[1] + (
+            self.target[1] - self.start_pos[1]
+        ) * self.progress
 
     def draw(
         self,
@@ -265,7 +267,10 @@ class MapVisualizer:
         hub_occupancy: dict[str, int],
     ) -> None:
         """Draw the static background map and hub overlays."""
-        self.screen.fill(BACKGROUND_COLOR)
+        if self.background_img is not None:
+            self.screen.blit(self.background_img, (0, 0))
+        else:
+            self.screen.fill(BACKGROUND_COLOR)
 
         for conn in config.connections:
             p1 = self.world_to_screen(conn.hub1.x, conn.hub1.y)
@@ -275,21 +280,6 @@ class MapVisualizer:
         for hub_item in all_hubs.values():
             pos = self.world_to_screen(hub_item.x, hub_item.y)
             hub_color = get_hub_color(hub_item)
-            shadow_pos = (pos[0] + 3, pos[1] + 3)
-            pygame.gfxdraw.filled_circle(
-                self.screen,
-                shadow_pos[0],
-                shadow_pos[1],
-                DEFAULT_HUB_RADIUS + 6,
-                (10, 14, 24),
-            )
-            pygame.gfxdraw.filled_circle(
-                self.screen,
-                pos[0],
-                pos[1],
-                DEFAULT_HUB_RADIUS + 4,
-                (18, 24, 38),
-            )
             pygame.gfxdraw.filled_circle(
                 self.screen,
                 pos[0],
@@ -344,7 +334,6 @@ class MapVisualizer:
                     f"{occupancy}/{capacity}",
                     (badge_rect.x + 8, badge_rect.y + 2),
                     color=OCCUPANCY_TEXT,
-                    shadow=False,
                 )
 
     def process_turn_targets(
@@ -359,15 +348,13 @@ class MapVisualizer:
         if turn_index >= len(sim_output):
             return
         for drone_id, target_name in sim_output[turn_index]:
-            next_hub_name = target_name.split("-")[-1]
-            target_hub = all_hubs.get(next_hub_name)
+            target_hub = all_hubs.get(target_name)
             if target_hub is None:
                 continue
             assert target_hub.x is not None
             assert target_hub.y is not None
-            drones[drone_id].set_target((float(
-                             target_hub.x), float(target_hub.y)))
-            drones[drone_id].next_hub_name = next_hub_name
+            drones[drone_id].set_target((float(target_hub.x), float(target_hub.y)))
+            drones[drone_id].next_hub_name = target_name
 
     def run_visualizer(
         self,
@@ -467,11 +454,11 @@ class MapVisualizer:
             pygame.display.flip()
 
             frame_in_turn += 1
-            if frame_in_turn >= 60:
+            if frame_in_turn >= 120:
                 frame_in_turn = 0
                 if turn_index < total_turns:
                     turn_index += 1
 
-            self.clock.tick(60)
+            self.clock.tick(120)
 
         pygame.quit()
