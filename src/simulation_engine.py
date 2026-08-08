@@ -4,7 +4,7 @@ import heapq
 
 from pydantic import BaseModel
 
-from config_maker import Config, connection, hub
+from .config_maker import Config, connection, hub
 
 
 ZONE_COST = {

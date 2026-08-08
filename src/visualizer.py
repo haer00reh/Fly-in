@@ -1,11 +1,12 @@
 """Visualization helpers for rendering the drone simulation."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pygame
 import pygame.gfxdraw
 
-from config_maker import Config, hub
+from .config_maker import Config, hub
 
 pygame.init()
 
@@ -47,7 +48,7 @@ OCCUPANCY_BG = (30, 32, 38)
 OCCUPANCY_TEXT = (240, 240, 240)
 
 
-def calculate_view_params(config) -> tuple[int, int, int, int]:
+def calculate_view_params(config: Config) -> tuple[int, int, int, int]:
     """Calculate the initial camera scale and offset for the map."""
     all_hubs = [config.start, config.end] + config.hubs
     xs = [h.x for h in all_hubs]
@@ -71,7 +72,7 @@ def calculate_view_params(config) -> tuple[int, int, int, int]:
     return scale, margin_x, margin_y, width_needed
 
 
-def get_hub_color(hub_item) -> tuple[int, int, int]:
+def get_hub_color(hub_item: hub) -> tuple[int, int, int]:
     """Return the color used to draw a hub based on its metadata."""
     if hub_item.color and hub_item.color in NAMED_COLORS:
         return NAMED_COLORS[hub_item.color]
@@ -81,7 +82,14 @@ def get_hub_color(hub_item) -> tuple[int, int, int]:
     )
 
 
-def render_text(screen, font, text, pos, color=TEXT_COLOR, shadow=True):
+def render_text(
+    screen: pygame.Surface,
+    font: pygame.font.Font,
+    text: str,
+    pos: tuple[int, int],
+    color: tuple[int, int, int] = TEXT_COLOR,
+    shadow: bool = True,
+) -> None:
     """Render a text label with optional shadowing."""
     if shadow:
         shadow_surf = font.render(text, True, (12, 16, 22))
@@ -92,7 +100,12 @@ def render_text(screen, font, text, pos, color=TEXT_COLOR, shadow=True):
 class DroneIcon:
     """Represents an animated drone icon in the visualizer."""
 
-    def __init__(self, id: int, start_pos: tuple[float, float], drone_img):
+    def __init__(
+        self,
+        id: int,
+        start_pos: tuple[float, float],
+        drone_img: pygame.Surface,
+    ):
         """Initialize the drone icon state."""
         self.id = id
         self.pos = list(start_pos)
@@ -116,7 +129,11 @@ class DroneIcon:
         else:
             self.pos[0], self.pos[1] = self.target
 
-    def draw(self, screen, world_to_screen) -> None:
+    def draw(
+        self,
+        screen: pygame.Surface,
+        world_to_screen: Callable[[float, float], tuple[int, int]],
+    ) -> None:
         """Draw the drone icon to the screen."""
         screen_pos = world_to_screen(self.pos[0], self.pos[1])
         rect = self.drone_img.get_rect(center=screen_pos)
@@ -241,7 +258,12 @@ class MapVisualizer:
             color=TEXT_COLOR,
         )
 
-    def draw_static_map(self, config, all_hubs, hub_occupancy) -> None:
+    def draw_static_map(
+        self,
+        config: Config,
+        all_hubs: dict[str, hub],
+        hub_occupancy: dict[str, int],
+    ) -> None:
         """Draw the static background map and hub overlays."""
         self.screen.fill(BACKGROUND_COLOR)
 
@@ -343,7 +365,8 @@ class MapVisualizer:
                 continue
             assert target_hub.x is not None
             assert target_hub.y is not None
-            drones[drone_id].set_target((float(target_hub.x), float(target_hub.y)))
+            drones[drone_id].set_target((float(
+                             target_hub.x), float(target_hub.y)))
             drones[drone_id].next_hub_name = next_hub_name
 
     def run_visualizer(
@@ -432,7 +455,8 @@ class MapVisualizer:
                             hub_occupancy.get(old_hub, 1) - 1,
                         )
                     if new_hub is not None:
-                        hub_occupancy[new_hub] = hub_occupancy.get(new_hub, 0) + 1
+                        hub_occupancy[new_hub] = hub_occupancy.get(
+                                                 new_hub, 0) + 1
                         drone.current_hub_name = new_hub
 
             self.update_camera()

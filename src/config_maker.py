@@ -228,7 +228,10 @@ class Config(BaseModel):
         dfs(self.start)
         for hub_name in self.hubs + [self.end]:
             if hub_name.name not in visited:
-                line_nb = hub_name.line_nb if hub_name.line_nb is not None else 0
+                if hub_name.line_nb is not None:
+                    line_nb = hub_name.line_nb
+                else:
+                    line_nb = 0
                 self.error_teller(
                     (
                         "hub '"
