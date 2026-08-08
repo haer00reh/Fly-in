@@ -16,7 +16,7 @@ MIN_SCALE = 40
 MAX_SCALE = 260
 ZOOM_STEP = 1.12
 SMOOTHING = 0.12
-CAMERA_SPEED = 18
+CAMERA_SPEED = 6
 
 DEFAULT_ZONE_COLOR = {
     "normal": (90, 160, 255),
@@ -369,7 +369,6 @@ class MapVisualizer:
         start_world = (float(config.start.x), float(config.start.y))
         drones: dict[int, DroneIcon] = {}
         hub_occupancy = {name: 0 for name in all_hubs}
-
         for drone_item in config.drones:
             assert drone_item.id is not None
             drones[drone_item.id] = DroneIcon(
@@ -387,9 +386,13 @@ class MapVisualizer:
 
         self.target_camera_x = self.camera_x
         self.target_camera_y = self.camera_y
-
         running = True
         while running:
+            if frame_in_turn == 0 and turn_index < total_turns:
+                turn = sim_output[turn_index]
+                formatted_moves = " ".join(f"D{drone_id}-{target_name}" for drone_id, target_name in turn)
+                print(formatted_moves)
+
             keys = pygame.key.get_pressed()
             if keys[pygame.K_a]:
                 self.target_camera_x += CAMERA_SPEED
@@ -399,7 +402,6 @@ class MapVisualizer:
                 self.target_camera_y += CAMERA_SPEED
             if keys[pygame.K_s]:
                 self.target_camera_y -= CAMERA_SPEED
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False

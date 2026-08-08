@@ -11,15 +11,21 @@ import sys
 
 def main() -> None:
     """Run the parser, simulation, and visualization pipeline."""
-    path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("src/map.txt")
-    parser = Parser(path=path)
-    parser.do_your_job()
-    config = Config()
-    config.init(parser.config_table)
-    sim_engine = simulation_engine(config=config)
-    sim_engine.path_finder()
-    vis = MapVisualizer(config)
-    vis.run_visualizer(config, sim_engine.turn_scheduler())
+    try:
+        path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("src/map.txt")
+        parser = Parser(path=path)
+        parser.do_your_job()
+        config = Config()
+        config.init(parser.config_table)
+        sim_engine = simulation_engine(config=config)
+        sim_engine.path_finder()
+        sim_output = sim_engine.turn_scheduler()
+        visualizer = MapVisualizer(config=config)
+
+        visualizer.run_visualizer(config=config, sim_output=sim_output)
+    except BaseException as e:
+        print(e)
+        pass
 
 
 if __name__ == "__main__":
