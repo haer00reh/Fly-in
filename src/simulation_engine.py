@@ -158,11 +158,13 @@ class simulation_engine(BaseModel):
         self.config.assign_drone_attributes(hubs)
         return True if self.path and self.cost != -1 else False
 
-    def turn_scheduler(self) -> list[tuple[tuple[int, str], ...]]:
+    def turn_scheduler(self) -> tuple[
+            list[tuple[tuple[int, str], ...]], list[dict[str, int]]]:
         """Compute the turn-by-turn movement schedule for all drones."""
         assert self.config is not None
         turn_log: list[tuple[tuple[int, str], ...]] = []
         start_name = self.config.start.name
+        connection_occupancy_history = []
         assert start_name is not None
         zone_occupancy: dict[str, int] = {start_name: len(self.config.drones)}
         connection_occupancy: dict[str, int] = {}
@@ -299,6 +301,8 @@ class simulation_engine(BaseModel):
                     zone_occupancy[next_hub.name] = (
                         zone_occupancy.get(next_hub.name, 0) + 1
                     )
+                    connection_occupancy_history.append(
+                        dict(connection_occupancy))
                     connection_occupancy[conn_key] -= 1
                     d.current_hub = next_hub
                     d.path_index += 1
@@ -312,7 +316,8 @@ class simulation_engine(BaseModel):
                     d.transit_conn_key = conn_key
                     assert d.id is not None
                     turn_moves[d.id] = next_hub.name
-
+                    connection_occupancy_history.append(
+                        dict(connection_occupancy))
             turn_log.append(tuple(turn_moves.items()))
 
             if not turn_moves and not any(
@@ -322,4 +327,4 @@ class simulation_engine(BaseModel):
             ):
                 break
 
-        return turn_log
+        return turn_log, connection_occupancy_history

@@ -19,10 +19,11 @@ def main() -> None:
         config.init(parser.config_table)
         sim_engine = simulation_engine(config=config)
         sim_engine.path_finder()
-        sim_output = sim_engine.turn_scheduler()
+        sim_output, connection_occupancy = sim_engine.turn_scheduler()
         visualizer = MapVisualizer(config=config)
 
-        visualizer.run_visualizer(config=config, sim_output=sim_output)
+        visualizer.run_visualizer(config=config, sim_output=sim_output,
+                                  connection_occupancy=connection_occupancy)
     except BaseException as e:
         print(e)
         pass
