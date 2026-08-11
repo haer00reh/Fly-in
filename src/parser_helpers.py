@@ -8,7 +8,7 @@ def link_parser(line: str | None, line_nb: int | None) -> int | None:
     if "max_link_capacity" in line:
         max_link_capacity = line.split("max_link_capacity=")[1].split()[0]
         try:
-            if int(max_link_capacity) < 0:
+            if int(max_link_capacity) <= 0:
                 print(
                     (
                         "WATCH OUT!!\n"
