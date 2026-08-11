@@ -63,9 +63,7 @@ class Parser(BaseModel):
             self.config_as_text.splitlines(),
             start=1,
         ):
-            line = line.strip()
-            value = line
-            self.config_table[line_nb] = value
+            self.config_table[line_nb] = line.strip()
         self.garbage_remover()
 
     def do_your_job(self) -> None:

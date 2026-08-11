@@ -39,7 +39,7 @@ class connection(BaseModel):
     hub2: hub | None = None
     occupied: bool = False
     meta_data_as_text: str | None = None
-    max_link_capacity: int | None = None
+    max_link_capacity: int = 1
     line_nb: int | None = None
 
     def init_metadata(self) -> None:

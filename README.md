@@ -113,4 +113,3 @@ simplifying docs and closing knowledge gaps for various topics, including pygame
 adding docstrings to functions and classes, and providing explanations for complex logic.
 fixing mypy and flake8 errors.
 generating custom test cases for the simulation engine and visualizer.
- 

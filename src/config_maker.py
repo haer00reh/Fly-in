@@ -169,8 +169,14 @@ class Config(BaseModel):
         elif line.startswith("start_hub:"):
             self.start.name = line.split()[1].strip()
             self.valid_name(self.start.name, line_nb)
-            self.start.x = int(line.split()[2].strip())
-            self.start.y = int(line.split()[3].strip())
+            try:
+                self.start.x = int(line.split()[2].strip())
+                self.start.y = int(line.split()[3].strip())
+            except ValueError:
+                self.error_teller(
+                    f"invalid coordinates for start hub '{self.start.name}'",
+                    line_nb,
+                )
             self.start.line_nb = line_nb
             if len(line.split()) == 5:
                 self.start.meta_data_as_text = line.split()[4].strip()
@@ -179,8 +185,14 @@ class Config(BaseModel):
         elif line.startswith("end_hub:"):
             self.end.name = line.split()[1].strip()
             self.valid_name(self.end.name, line_nb)
-            self.end.x = int(line.split()[2].strip())
-            self.end.y = int(line.split()[3].strip())
+            try:
+                self.end.x = int(line.split()[2].strip())
+                self.end.y = int(line.split()[3].strip())
+            except ValueError:
+                self.error_teller(
+                    f"invalid coordinates for end hub '{self.end.name}'",
+                    line_nb,
+                )
             self.end.line_nb = line_nb
             if len(line.split()) == 5:
                 self.end.meta_data_as_text = line.split()[4].strip()
@@ -197,7 +209,6 @@ class Config(BaseModel):
                     f"invalid coordinates for hub '{hub_name}'",
                     line_nb,
                 )
-                return
             hub_meta_data = " ".join(line.split()[4:])
             self.hubs.append(
                 hub(
