@@ -318,9 +318,9 @@ class simulation_engine(BaseModel):
                     turn_moves[d.id] = next_hub.name
                     connection_occupancy_history.append(
                         dict(connection_occupancy))
-            turn_log.append(tuple(turn_moves.items()))
-
-            if not turn_moves and not any(
+            if turn_moves:
+                turn_log.append(tuple(turn_moves.items()))
+            elif not any(
                 d.transit_turns_left > 0
                 for d in self.config.drones
                 if not d.finished
