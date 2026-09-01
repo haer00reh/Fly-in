@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from typing import Any
-
+import sys
 import pygame
 import pygame.gfxdraw
 
@@ -41,21 +41,8 @@ class MapVisualizer:
         if drone_path.exists():
             self.drone_img = pygame.image.load(drone_path).convert_alpha()
         else:
-            self.drone_img = pygame.Surface((44, 44), pygame.SRCALPHA)
-            pygame.gfxdraw.filled_circle(
-                self.drone_img,
-                22,
-                22,
-                22,
-                (90, 190, 255),
-            )
-            pygame.gfxdraw.aacircle(
-                self.drone_img,
-                22,
-                22,
-                22,
-                (255, 255, 255),
-            )
+            print("drone image was not found", file=sys.stderr)
+            sys.exit(1)
         self.drone_img = pygame.transform.smoothscale(self.drone_img, (44, 44))
 
         background_path = asset_dir / "Background.png"
