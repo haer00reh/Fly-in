@@ -14,7 +14,7 @@ def main() -> None:
     try:
         path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("src/map.txt")
         parser = Parser(path=path)
-        parser.do_your_job()
+        parser.init()
         config = Config()
         config.init(parser.config_table)
         sim_engine = simulation_engine(config=config)

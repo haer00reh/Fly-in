@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from .parser_helpers import hub_parser, link_parser
 import sys
+import pygame
+from typing import Callable
 
 
 class hub(BaseModel):
@@ -92,3 +94,61 @@ class drone(BaseModel):
     transit_conn_key: str | None = None
     path: list[hub] = []
     path_index: int = 0
+
+
+class DroneIcon:
+    """Represents an animated drone icon in the visualizer."""
+
+    def __init__(
+        self,
+        id: int,
+        start_pos: tuple[float, float],
+        drone_img: pygame.Surface,
+    ):
+        """Initialize the drone icon state."""
+        self.id = id
+        self.pos = list(start_pos)
+        self.target = list(start_pos)
+        self.start_pos = list(start_pos)
+        self.progress = 1.0
+        self.drone_img = drone_img
+        self.current_hub_name: str | None = None
+        self.next_hub_name: str | None = None
+
+    def set_target(self, pos: tuple[float, float]) -> None:
+        """Set the drone icon's movement target."""
+        self.start_pos = list(self.pos)
+        self.target = list(pos)
+        self.progress = 0.0
+
+    def update(self, step: float = 1 / 60) -> None:
+        """Move the drone icon toward its target over one turn."""
+        if self.progress >= 1.0:
+            self.pos[0], self.pos[1] = self.target
+            return
+        self.progress = min(1.0, self.progress + step)
+        self.pos[0] = self.start_pos[0] + (
+            self.target[0] - self.start_pos[0]
+        ) * self.progress
+        self.pos[1] = self.start_pos[1] + (
+            self.target[1] - self.start_pos[1]
+        ) * self.progress
+
+    def draw(
+        self,
+        screen: pygame.Surface,
+        world_to_screen: Callable[[float, float], tuple[int, int]],
+    ) -> None:
+        """Draw the drone icon to the screen."""
+        screen_pos = world_to_screen(self.pos[0], self.pos[1])
+        rect = self.drone_img.get_rect(center=screen_pos)
+        screen.blit(self.drone_img, rect)
+        label = pygame.font.Font(None, 20).render(
+            "",
+            True,
+            (255, 255, 255),
+        )
+        screen.blit(
+            label,
+            (rect.centerx - label.get_width() // 2, rect.top - 20),
+        )

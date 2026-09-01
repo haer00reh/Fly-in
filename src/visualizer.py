@@ -7,11 +7,12 @@ import pygame
 import pygame.gfxdraw
 
 from .config_maker import Config, hub
-from .vis_utils import DroneIcon, BACKGROUND_COLOR, CAMERA_SPEED
+from .vis_utils import BACKGROUND_COLOR, CAMERA_SPEED
 from .vis_utils import CONNECTION_COLOR, DEFAULT_HUB_RADIUS, HUB_BORDER_COLOR
 from .vis_utils import MAX_SCALE, OCCUPANCY_BG, OCCUPANCY_TEXT, MIN_SCALE
 from .vis_utils import TEXT_COLOR, WIDTH, HEIGHT, ZOOM_STEP, render_text
 from .vis_utils import SMOOTHING, calculate_view_params, get_hub_color
+from .objects import DroneIcon
 
 pygame.init()
 

@@ -66,7 +66,7 @@ class Parser(BaseModel):
             self.config_table[line_nb] = line.strip()
         self.garbage_remover()
 
-    def do_your_job(self) -> None:
+    def init(self) -> None:
         """Parse and inspect the configuration file."""
         try:
             self.extract()
